@@ -1,4 +1,6 @@
-# Music Testbed 0.1.0 검증 기록
+# 원본 0.1.0 검증 기록 (참고)
+
+이 문서는 기준 버전의 기록입니다. 현재 PoC의 결과와 12개 실기기 항목은 [BACKGROUND-POC-REPORT.md](BACKGROUND-POC-REPORT.md)를 확인하세요.
 
 검사일은 2026-11-25입니다. 연결된 Android 기기는 없습니다. Premium 계정 로그인이나 광고 검증도 수행하지 않았습니다.
 

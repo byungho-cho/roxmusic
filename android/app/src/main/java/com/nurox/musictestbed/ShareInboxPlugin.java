@@ -61,15 +61,20 @@ public class ShareInboxPlugin extends Plugin {
         }
         Uri uri = Uri.parse("https://www.youtube.com/watch?v=" + videoId + "&t=" + seconds.intValue() + "s");
         Intent intent = new Intent(Intent.ACTION_VIEW, uri).setPackage("com.google.android.youtube");
+        BackgroundDiagnostics.append(getContext(), "youtube_handoff_requested", null);
         getActivity().runOnUiThread(() -> {
             try {
                 getActivity().startActivity(intent);
+                BackgroundDiagnostics.append(getContext(), "youtube_app_opened", null);
                 call.resolve();
             } catch (ActivityNotFoundException unavailable) {
+                BackgroundDiagnostics.append(getContext(), "youtube_app_unavailable", null);
                 try {
                     getActivity().startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                    BackgroundDiagnostics.append(getContext(), "external_fallback_opened", null);
                     call.resolve();
                 } catch (ActivityNotFoundException error) {
+                    BackgroundDiagnostics.append(getContext(), "handoff_failed", null);
                     call.reject("NO_YOUTUBE_HANDLER");
                 }
             }

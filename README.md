@@ -1,3 +1,14 @@
+# Music Testbed — Background PoC
+
+현재 브랜치는 `poc/background-playback`입니다. [기술 검토·실기기 시험표](BACKGROUND-POC-REPORT.md)를 먼저 확인하세요.
+
+PoC APK: `D:/workspace/music-testbed-background-poc/artifacts/music-testbed-background-poc.1-debug.apk`.
+원본과 별도 설치되며 앱 이름은 **Music Testbed PoC**입니다. 재생목록 저장공간도 별도입니다.
+진단 로그를 추가한 APK이며 YouTube 임베드의 백그라운드 재생을 활성화하지 않습니다. 실제 기기 시험은 미실시입니다.
+기기 로그 수집: `powershell -File scripts/collect-background.ps1`.
+
+아래 내용은 원본 0.1.0의 사용 안내입니다. 원본 APK 경로와 PoC APK를 구분하세요.
+
 # Music Testbed 0.1.0
 
 YouTube 영상 전체 또는 지정 구간을 목록에 저장하고 차례로 재생하는 개인용 Android 테스트베드입니다.

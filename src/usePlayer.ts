@@ -4,6 +4,7 @@ import type { Track } from './domain';
 import { validateRange } from './domain';
 import { QueueGuard, neighbor } from './queue';
 import { loadYoutube, matchesVideo, playerErrors, type Player, type PlayerEvent, type VideoRequest } from './youtube';
+import { recordBackground } from './backgroundDiagnostics';
 
 export type Playback = { track: Track | null; status: string; playing: boolean; ready: boolean; error: string | null; errorCode?: number; time: number; duration: number; seekWarning: boolean };
 const initial: Playback = { track: null, status: '영상을 등록해 주세요', playing: false, ready: false, error: null, time: 0, duration: 0, seekWarning: false };
@@ -33,6 +34,7 @@ export function usePlayer(tracks: Track[]) {
       return;
     }
     guard.current.begin();
+    recordBackground('load_requested', { position: track.startSeconds });
     current.current = track;
     lastSample.current = null;
     suspended.current = false;
@@ -47,6 +49,7 @@ export function usePlayer(tracks: Track[]) {
 
   useEffect(() => {
     let alive = true;
+    let lastDiagnosticSample = 0;
     const root = container.current;
     if (!root) return;
     const element = document.createElement('div');
@@ -54,6 +57,7 @@ export function usePlayer(tracks: Track[]) {
     const onStateChange = ({ target, data }: PlayerEvent) => {
       if (!alive || target !== player.current || !current.current) return;
       if (target.getPlayerState() !== data) return;
+      recordBackground('player_state', { playerState: data, position: target.getCurrentTime(), duration: target.getDuration() });
       const track = current.current;
       if (!matchesVideo(target, track.videoId)) return;
       if (data === 1) {
@@ -91,6 +95,7 @@ export function usePlayer(tracks: Track[]) {
           onReady: () => {
             if (!alive) return;
             initialized.current = true;
+            recordBackground('player_ready');
             setPlayback(value => ({ ...value, ready: true, status: current.current ? '재생을 눌러 주세요' : '영상을 등록해 주세요' }));
             record('플레이어 준비 · origin ' + location.origin);
           },
@@ -98,11 +103,13 @@ export function usePlayer(tracks: Track[]) {
           onError: event => {
             if (!alive) return;
             record('YouTube 오류 ' + event.data);
+            recordBackground('player_error', { playerState: event.data });
             setPlayback(value => ({ ...value, playing: false, errorCode: event.data, error: playerErrors[event.data] ?? '영상을 재생할 수 없습니다.', status: '재생 오류' }));
           },
           onAutoplayBlocked: () => {
             if (!alive) return;
             record('자동재생 차단');
+            recordBackground('autoplay_blocked');
             setPlayback(value => ({ ...value, playing: false, status: '재생을 눌러 계속해 주세요' }));
           },
         },
@@ -116,6 +123,10 @@ export function usePlayer(tracks: Track[]) {
       const target = player.current, track = current.current;
       if (!initialized.current || !target || !track || !matchesVideo(target, track.videoId)) return;
       const time = target.getCurrentTime(), duration = target.getDuration(), at = Date.now();
+      if (at - lastDiagnosticSample >= 15000) {
+        lastDiagnosticSample = at;
+        recordBackground('timer_sample', { playerState: target.getPlayerState(), position: time, duration });
+      }
       const previous = lastSample.current;
       // Diagnostic only. Do not infer advertisement state or interrupt ads with a boundary timer.
       const jumped = previous !== null && Math.abs(time - previous.time) > Math.max(3, (at - previous.at) / 1000 + 2);
@@ -133,27 +144,40 @@ export function usePlayer(tracks: Track[]) {
   }, [attempt]);
 
   useEffect(() => {
-    const suspend = () => {
+    const suspend = (reason = 'native_or_page') => {
+      recordBackground('suspend', { reason });
       suspended.current = true;
       player.current?.pauseVideo();
       setPlayback(value => ({ ...value, playing: false, status: current.current ? '앱 복귀 후 재생을 눌러 주세요' : value.status }));
     };
-    const visibility = () => { if (document.visibilityState === 'hidden') suspend(); };
+    const visibility = () => {
+      recordBackground('visibility');
+      if (document.visibilityState === 'hidden') suspend('visibility_hidden');
+    };
+    const pagehide = () => { recordBackground('pagehide'); suspend('pagehide'); };
+    const nativeSuspend = () => suspend('native_stop');
     const offline = () => {
-      suspend();
+      recordBackground('offline');
+      suspend('offline');
       setPlayback(value => ({ ...value, error: '네트워크가 끊겼습니다. 연결 후 다시 재생해 주세요.', status: '오프라인' }));
     };
-    const subscription = App.addListener('appStateChange', state => { if (!state.isActive) suspend(); });
+    const online = () => recordBackground('online');
+    const subscription = App.addListener('appStateChange', state => {
+      recordBackground('app_state', { reason: state.isActive ? 'active' : 'inactive' });
+      if (!state.isActive) suspend('app_inactive');
+    });
     document.addEventListener('visibilitychange', visibility);
-    window.addEventListener('pagehide', suspend);
-    window.addEventListener('music-testbed-suspend', suspend);
+    window.addEventListener('pagehide', pagehide);
+    window.addEventListener('music-testbed-suspend', nativeSuspend);
     window.addEventListener('offline', offline);
+    window.addEventListener('online', online);
     return () => {
       void subscription.then(handle => handle.remove());
       document.removeEventListener('visibilitychange', visibility);
-      window.removeEventListener('pagehide', suspend);
-      window.removeEventListener('music-testbed-suspend', suspend);
+      window.removeEventListener('pagehide', pagehide);
+      window.removeEventListener('music-testbed-suspend', nativeSuspend);
       window.removeEventListener('offline', offline);
+      window.removeEventListener('online', online);
     };
   }, []);
   return {

@@ -80,6 +80,13 @@ test('same-video queue advances once, rapid changes retain one player, autoplay 
   await expect(page.locator('.status')).toContainText('복귀 후');
   await page.evaluate(() => (window as unknown as { emitMusicState: (state: number) => void }).emitMusicState(1));
   await expect(page.getByRole('button', { name: '▶ 재생', exact: true })).toBeVisible();
+  const events = await page.evaluate(async () => {
+    const modulePath = '/src/backgroundDiagnostics.ts';
+    const diagnostics = await import(modulePath);
+    return diagnostics.backgroundEvents() as { event: string; reason?: string }[];
+  });
+  expect(events.some(entry => entry.event === 'suspend' && entry.reason === 'native_stop')).toBe(true);
+  expect(events.some(entry => entry.event === 'load_requested')).toBe(true);
 });
 test('invalid URL and ranges stay in the form, player errors expose a recovery path', async ({ page }) => {
   await mockPlayer(page); await page.goto('/');
