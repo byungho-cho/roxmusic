@@ -1,0 +1,16 @@
+import { readFile, writeFile } from 'node:fs/promises';
+const packagePath = new URL('../package.json', import.meta.url);
+const lockPath = new URL('../package-lock.json', import.meta.url);
+const pkg = JSON.parse(await readFile(packagePath, 'utf8'));
+const lock = JSON.parse(await readFile(lockPath, 'utf8'));
+if (!/^\d+\.\d+\.\d+$/.test(pkg.version)) throw new Error('Expected major.minor.patch version');
+const parts = pkg.version.split('.').map(Number);
+parts[2]++;
+pkg.version = parts.join('.');
+pkg.roxMusic.androidVersionCode++;
+if (!Number.isSafeInteger(pkg.roxMusic.androidVersionCode) || pkg.roxMusic.androidVersionCode > 2100000000) throw new Error('Invalid Android versionCode');
+lock.version = pkg.version;
+lock.packages[''].version = pkg.version;
+await writeFile(packagePath, JSON.stringify(pkg, null, 2) + '\n');
+await writeFile(lockPath, JSON.stringify(lock, null, 2) + '\n');
+console.log(`RoxMusic ${pkg.version} / Android versionCode ${pkg.roxMusic.androidVersionCode}`);

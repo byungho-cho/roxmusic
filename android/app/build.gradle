@@ -1,5 +1,7 @@
 apply plugin: 'com.android.application'
 
+def roxPackage = new groovy.json.JsonSlurper().parse(file('../../package.json'))
+
 android {
     namespace = "com.nurox.musictestbed"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +9,8 @@ android {
         applicationId "com.nurox.musictestbed.backgroundpoc"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "0.1.0-background-poc.1"
+        versionCode roxPackage.roxMusic.androidVersionCode as int
+        versionName roxPackage.version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

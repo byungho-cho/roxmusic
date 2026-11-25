@@ -1,4 +1,15 @@
-# Music Testbed — Background PoC
+# RoxMusic 0.0.1 — Background PoC
+
+공식 APK 이름은 `RoxMusic_버전.apk`, 실험용은 `RoxMusic_실험명_버전.apk`입니다.
+현재 산출물: `artifacts/RoxMusic_background-poc_0.0.1.apk`.
+`npm run android:build`가 버전에 맞는 파일을 자동 생성합니다. 파일명에 debug 표기는 없지만 현재 APK는 개발용 debug 서명입니다.
+
+업데이트마다 `npm run version:patch`를 한 번 실행해 0.0.1 → 0.0.2 → 0.0.3 순으로 올린 후 변경 사항과 함께 커밋합니다.
+이 명령은 package/lock 버전과 Android versionCode를 함께 증가시킵니다. 화면·Android versionName·APK 파일명은 package.json을 참조합니다.
+같은 업데이트의 재빌드는 버전을 증가시키지 않습니다. 실험명은 package.json의 roxMusic.distributionSuffix이며 공식 배포 시 빈 문자열로 지정합니다.
+앱 식별자와 저장소 키는 이전 설치의 업데이트·데이터 보존을 위해 유지합니다.
+
+이전 PoC 배포 기록은 아래에 보존합니다.
 
 현재 브랜치는 `poc/background-playback`입니다. [기술 검토·실기기 시험표](BACKGROUND-POC-REPORT.md)를 먼저 확인하세요.
 

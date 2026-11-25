@@ -3,6 +3,7 @@ import { formatTime, parseTime, parseYoutube, validateRange, type Track } from '
 import { loadTracks, saveTracks } from './storage';
 import { nativeAndroid, openYoutube, shareInbox } from './native';
 import { usePlayer } from './usePlayer';
+import packageInfo from '../package.json';
 
 type Draft = { url: string; title: string; artist: string; start: string; end: string };
 const blank: Draft = { url: '', title: '', artist: '', start: '0:00', end: '' };
@@ -148,7 +149,7 @@ export default function Application() {
   const index = tracks.findIndex(track => track.id === selected?.id);
   return <main className="app">
     <header className="header">
-      <div><span className="eyebrow">MY VIDEO QUEUE</span><h1>Music Testbed<span>0.1</span></h1></div>
+      <div><span className="eyebrow">MY VIDEO QUEUE</span><h1>RoxMusic<span>{packageInfo.version}</span></h1></div>
       <button className="add circle" aria-label="영상 추가" disabled={!loaded || saving} onClick={() => { music.pause(); setDraft(blank); setEditing(null); setFormError(null); setShowForm(true); }}>＋</button>
     </header>
     <section className="player-section" aria-label="영상 재생">
